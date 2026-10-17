@@ -22,9 +22,10 @@ export default function App() {
   const refreshLibrary = () => listGames().then(setGames).catch(() => setError('No se pudo acceder a la biblioteca local.'))
   useEffect(() => { refreshLibrary() }, [])
   const loadGame = async (selected: PS1Game) => { setError(''); setImporting(selected.extension === 'ecm'); try { const next = selected.extension === 'ecm' ? validateGameFile(await decodeEcm(selected.file)) : selected; setGame(next); await registerGame(next.file); refreshLibrary() } catch (error) { setError(error instanceof Error ? error.message : 'No se pudo importar el juego.') } finally { setImporting(false) } }
+  const exitGame = () => { setGame(null); setError(''); setEmulatorInputs({}) }
   return <main><header><div className="brand"><span>◉</span><div><b>PS1 WEB</b><small>EMULATOR</small></div></div><div className="status"><i /> LOCAL · PRIVADO</div></header>
     <div className="layout"><GameLibrary games={games} onToggleFavorite={async (id) => { await toggleFavorite(id); refreshLibrary() }} onDelete={async (id) => { await deleteGame(id); refreshLibrary() }} />
-      <section className="play-area"><div className="play-head"><div><p className="eyebrow">SESIÓN ACTUAL</p><h1>{game?.name ?? 'Listo para jugar'}</h1></div><button className="icon-button" onClick={() => document.querySelector('.emulator-frame')?.requestFullscreen()}>⛶</button></div>
+      <section className="play-area"><div className="play-head"><div><p className="eyebrow">SESIÓN ACTUAL</p><h1>{game?.name ?? 'Listo para jugar'}</h1></div><div className="play-actions">{game && <button className="exit-game" onClick={exitGame}>Salir del juego</button>}<button className="icon-button" aria-label="Pantalla completa" onClick={() => document.querySelector('.emulator-frame')?.requestFullscreen()}>⛶</button></div></div>
         <div className="screen"><PS1Emulator ref={emulator} game={game} bios={bios} controls={controls} onError={setError} onRemoteState={confirmRemoteInput} /></div>
         {!game && <GameUploader onGame={loadGame} onError={setError} />}
         {importing && <p className="importing" role="status">Convirtiendo ECM localmente a BIN… Puede tardar y usar memoria adicional.</p>}
