@@ -8,6 +8,7 @@ export const defaultControls: ControlMap = {
   '6': { label: '←', value: 'left arrow', value2: 'DPAD_LEFT' }, '7': { label: '→', value: 'right arrow', value2: 'DPAD_RIGHT' },
   '8': { label: '○', value: 'z', value2: 'BUTTON_1' }, '9': { label: '△', value: 'a', value2: 'BUTTON_3' },
   '10': { label: 'L1', value: 'q', value2: 'LEFT_TOP_SHOULDER' }, '11': { label: 'R1', value: 'e', value2: 'RIGHT_TOP_SHOULDER' },
+  '12': { label: 'L2', value: '1', value2: 'LEFT_BOTTOM_SHOULDER' }, '13': { label: 'R2', value: '3', value2: 'RIGHT_BOTTOM_SHOULDER' },
 }
 /** Keyboard fallback used solely by the second remote player inside EmulatorJS. */
 export const player2Controls: ControlMap = {
@@ -17,6 +18,7 @@ export const player2Controls: ControlMap = {
   '6': { label: '←', value: 'a', value2: 'DPAD_LEFT' }, '7': { label: '→', value: 'd', value2: 'DPAD_RIGHT' },
   '8': { label: '○', value: 'f', value2: 'BUTTON_1' }, '9': { label: '△', value: 'r', value2: 'BUTTON_3' },
   '10': { label: 'L1', value: 'q', value2: 'LEFT_TOP_SHOULDER' }, '11': { label: 'R1', value: 'e', value2: 'RIGHT_TOP_SHOULDER' },
+  '12': { label: 'L2', value: '1', value2: 'LEFT_BOTTOM_SHOULDER' }, '13': { label: 'R2', value: '3', value2: 'RIGHT_BOTTOM_SHOULDER' },
 }
 const toPlayer = (controls: ControlMap) => Object.fromEntries(Object.entries(controls).map(([id, binding]) => [id, { value: binding.value, value2: binding.value2 }]))
 export const toEjsControls = (controls: ControlMap) => ({ 0: toPlayer(controls), 1: toPlayer(player2Controls), 2: {}, 3: {} })
