@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Peer, { type DataConnection } from 'peerjs'
 
-const controls = [['10', 'L1'], ['11', 'R1'], ['4', '▲'], ['6', '◀'], ['5', '▼'], ['7', '▶'], ['9', '□'], ['0', '△'], ['8', '×'], ['1', '○'], ['2', 'SELECT'], ['3', 'START']] as const
+type Button = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11'
 
 export function MobileController({ hostId, player }: { hostId: string; player: 1 | 2 }) {
   const connection = useRef<DataConnection | null>(null); const [status, setStatus] = useState('Conectando…'); const [acknowledged, setAcknowledged] = useState(0)
@@ -11,6 +11,7 @@ export function MobileController({ hostId, player }: { hostId: string; player: 1
     peer.on('error', () => setStatus('No se pudo crear el control remoto.'))
     return () => { window.clearTimeout(timer); connection.current?.close(); peer.destroy() }
   }, [hostId, player])
-  const input = (button: string, pressed: boolean) => { if (connection.current?.open) connection.current.send({ type: 'input', button, pressed }) }
-  return <main className="mobile-controller"><header><div className="brand"><span>◉</span><div><b>PS1 WEB</b><small>CONTROL REMOTO</small></div></div></header><p className="remote-status">{status}</p><p className="remote-player">JUGADOR {player} · {acknowledged ? `${acknowledged} señales confirmadas` : 'pulsa un botón para verificar'}</p><div className="phone-pad">{controls.map(([id, label]) => <button key={id} className={`phone-button button-${id}`} onContextMenu={(event) => event.preventDefault()} onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); input(id, true) }} onPointerUp={() => input(id, false)} onPointerCancel={() => input(id, false)} onPointerLeave={(event) => { if (event.buttons) input(id, false) }}>{label}</button>)}</div><p className="remote-hint">Mantén el teléfono en horizontal para una mejor distribución. La conexión de juego es directa y cifrada.</p></main>
+  const input = (button: Button, pressed: boolean) => { if (connection.current?.open) connection.current.send({ type: 'input', button, pressed }) }
+  const control = (button: Button, label: string, className = '') => <button className={`ps-button ${className}`} onContextMenu={(event) => event.preventDefault()} onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); input(button, true) }} onPointerUp={() => input(button, false)} onPointerCancel={() => input(button, false)} onPointerLeave={(event) => { if (event.buttons) input(button, false) }}>{label}</button>
+  return <main className="mobile-controller"><section className="orientation-warning"><span>↻</span><h1>Gira tu teléfono</h1><p>El control PS1 se usa en horizontal.</p></section><section className="controller-stage"><header className="mobile-header"><div className="brand"><span>◉</span><div><b>PS1 WEB</b><small>CONTROL {player}</small></div></div><div className="sync-state"><i />{status}<small>{acknowledged ? `${acknowledged} señales confirmadas` : 'Toca un botón para comprobar'}</small></div></header><div className="ps1-controller"><div className="shoulders">{control('10', 'L1', 'shoulder left')}{control('11', 'R1', 'shoulder right')}</div><div className="controller-body"><div className="dpad">{control('4', '▲', 'up')}{control('6', '◀', 'left')}{control('5', '▼', 'down')}{control('7', '▶', 'right')}</div><div className="center-controls">{control('2', 'SELECT', 'select')}{control('3', 'START', 'start')}<span className="ps-logo">PS</span></div><div className="face-buttons">{control('0', '△', 'triangle')}{control('9', '□', 'square')}{control('8', '×', 'cross')}{control('1', '○', 'circle')}</div></div></div></section></main>
 }
