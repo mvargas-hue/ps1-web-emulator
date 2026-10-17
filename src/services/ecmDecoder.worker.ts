@@ -4,7 +4,7 @@ const input = (source: ArrayBuffer) => new Uint8Array(source)
 const sync = (sector: Uint8Array) => { sector.fill(0); sector.fill(0xff, 1, 11) }
 function createTables() {
   const forward = new Uint8Array(256); const backward = new Uint8Array(256); const edc = new Uint32Array(256)
-  for (let i = 0; i < 256; i++) { const doubled = (i << 1) ^ (i & 0x80 ? 0x11d : 0); forward[i] = doubled; backward[i ^ doubled] = i; let value = i; for (let bit = 0; bit < 8; bit++) value = (value >>> 1) ^ (value & 1 ? 0xd8018001 : 0); edc[i] = value >>> 0 }
+  for (let i = 0; i < 256; i++) { const doubled = (i << 1) ^ (i & 0x80 ? 0x11d : 0); forward[i] = doubled; backward[i ^ doubled] = i; let value = i; for (let bit = 0; bit < 8; bit++) value = (value >>> 1) ^ ((value & 1) ? 0xd8018001 : 0); edc[i] = value >>> 0 }
   return { forward, backward, edc }
 }
 const tables = createTables()
@@ -16,7 +16,7 @@ function eccBlock(source: Uint8Array, majorCount: number, minorCount: number, ma
 function put32le(target: Uint8Array, offset: number, value: number) { target[offset] = value; target[offset + 1] = value >>> 8; target[offset + 2] = value >>> 16; target[offset + 3] = value >>> 24 }
 function generateSector(sector: Uint8Array, type: number) {
   if (type === 1) { put32le(sector, 0x810, checksum(0, sector, 0, 0x810)); sector.fill(0, 0x814, 0x81c); eccBlock(sector, 86, 24, 2, 86, sector, 0x81c); eccBlock(sector, 52, 43, 86, 88, sector, 0x8c8); return }
-  put32le(sector, type === 2 ? 0x818 : 0x92c, checksum(0, sector, 0x10, type === 2 ? 0x818 : 0x92c)); const address = sector.slice(12, 16); sector.fill(0, 12, 16); eccBlock(sector, 86, 24, 2, 86, sector, 0x81c); eccBlock(sector, 52, 43, 86, 88, sector, 0x8c8); sector.set(address, 12)
+  put32le(sector, type === 2 ? 0x818 : 0x92c, checksum(0, sector, 0x10, type === 2 ? 0x818 : 0x92c)); if (type === 3) return; const address = sector.slice(12, 16); sector.fill(0, 12, 16); eccBlock(sector, 86, 24, 2, 86, sector, 0x81c); eccBlock(sector, 52, 43, 86, 88, sector, 0x8c8); sector.set(address, 12)
 }
 function decode(source: ArrayBuffer, maxOutputBytes: number) {
   const encoded = input(source); if (encoded.length < 8 || encoded[0] !== 0x45 || encoded[1] !== 0x43 || encoded[2] !== 0x4d || encoded[3] !== 0) throw new Error('El archivo no tiene una cabecera ECM válida.')
@@ -28,8 +28,8 @@ function decode(source: ArrayBuffer, maxOutputBytes: number) {
     if (type === 0) { write(take(count)); continue }
     for (let sectorNumber = 0; sectorNumber < count; sectorNumber++) { const sector = new Uint8Array(2352); sync(sector); if (type === 1) { sector[15] = 1; sector.set(take(3), 12); sector.set(take(0x800), 0x10); generateSector(sector, 1); write(sector) } else if (type === 2) { sector[15] = 2; sector.set(take(4), 0x14); sector.set(sector.slice(0x14, 0x18), 0x10); sector.set(take(0x800), 0x18); generateSector(sector, 2); write(sector.slice(0x10)) } else if (type === 3) { sector[15] = 2; sector.set(take(4), 0x14); sector.set(sector.slice(0x14, 0x18), 0x10); sector.set(take(0x914), 0x18); generateSector(sector, 3); write(sector.slice(0x10)) } else throw new Error('El archivo ECM usa un tipo de sector no compatible.') }
   }
-  const expected = take(4); const expectedHash = expected[0] | (expected[1] << 8) | (expected[2] << 16) | (expected[3] << 24); if ((hash >>> 0) !== (expectedHash >>> 0)) throw new Error('La verificación ECM falló; el archivo podría estar dañado.')
-  const result = new Uint8Array(total); let offset = 0; for (const chunk of chunks) { result.set(chunk, offset); offset += chunk.length } return result.buffer
+  const expected = take(4); const expectedHash = expected[0] | (expected[1] << 8) | (expected[2] << 16) | (expected[3] << 24); if ((hash >>> 0) !== (expectedHash >>> 0)) throw new Error(`La verificación ECM falló (EDC ${hash.toString(16)}; esperado ${(expectedHash >>> 0).toString(16)}).`)
+  return new Blob(chunks, { type: 'application/octet-stream' })
 }
 const workerScope = self as unknown as { onmessage: (event: MessageEvent<DecodeRequest>) => void; postMessage(message: unknown, transfer?: Transferable[]): void }
-workerScope.onmessage = ({ data }) => { try { const output = decode(data.source, data.maxOutputBytes); workerScope.postMessage({ ok: true, output }, [output]) } catch (error) { workerScope.postMessage({ ok: false, error: error instanceof Error ? error.message : 'No se pudo decodificar ECM.' }) } }
+workerScope.onmessage = ({ data }) => { try { const output = decode(data.source, data.maxOutputBytes); workerScope.postMessage({ ok: true, output }) } catch (error) { workerScope.postMessage({ ok: false, error: error instanceof Error ? error.message : 'No se pudo decodificar ECM.' }) } }
