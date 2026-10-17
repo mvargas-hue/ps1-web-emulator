@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import Peer, { type DataConnection } from 'peerjs'
 
 type Button = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11'
-// EmulatorJS/PCSX-ReARMed uses these PS1 button indexes: △ 0, ○ 1, × 8, □ 9.
+// PCSX-ReARMed follows the Libretro pad order: × 0, □ 1, ○ 8, △ 9.
 const faceButtons: ReadonlyArray<{ id: Button; label: string; position: string; name: string }> = [
-  { id: '0', label: '△', position: 'triangle', name: 'Triángulo' },
-  { id: '9', label: '□', position: 'square', name: 'Cuadrado' },
-  { id: '8', label: '×', position: 'cross', name: 'Cruz' },
-  { id: '1', label: '○', position: 'circle', name: 'Círculo' },
+  { id: '9', label: '△', position: 'triangle', name: 'Triángulo' },
+  { id: '1', label: '□', position: 'square', name: 'Cuadrado' },
+  { id: '0', label: '×', position: 'cross', name: 'Cruz' },
+  { id: '8', label: '○', position: 'circle', name: 'Círculo' },
 ]
 
 export function MobileController({ hostId, player }: { hostId: string; player: 1 | 2 }) {
