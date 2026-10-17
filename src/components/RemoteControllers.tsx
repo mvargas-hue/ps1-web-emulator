@@ -1,0 +1,21 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import Peer, { type DataConnection } from 'peerjs'
+import { QRCodeSVG } from 'qrcode.react'
+
+export type RemoteInput = { player: 1 | 2; button: string; pressed: boolean }
+export function RemoteControllers({ onInput }: { onInput(input: RemoteInput): void }) {
+  const peer = useRef<Peer | null>(null); const [hostId, setHostId] = useState(''); const [players, setPlayers] = useState<Record<number, boolean>>({})
+  useEffect(() => {
+    const id = `ps1-${crypto.randomUUID().replaceAll('-', '')}`; const instance = new Peer(id); peer.current = instance
+    instance.on('open', () => setHostId(id)); instance.on('connection', (connection) => attach(connection)); instance.on('error', () => setHostId(''))
+    const attach = (connection: DataConnection) => {
+      const player = connection.metadata?.player === 2 ? 2 : 1
+      connection.on('open', () => setPlayers((current) => ({ ...current, [player]: true })))
+      connection.on('data', (payload: unknown) => { const data = payload as { type?: string; button?: string; pressed?: boolean }; if (data.type === 'input' && typeof data.button === 'string' && typeof data.pressed === 'boolean') onInput({ player, button: data.button, pressed: data.pressed }) })
+      connection.on('close', () => setPlayers((current) => ({ ...current, [player]: false })))
+    }
+    return () => instance.destroy()
+  }, [onInput])
+  const urls = useMemo(() => [1, 2].map((player) => `${window.location.origin}${window.location.pathname}?remote=${encodeURIComponent(hostId)}&player=${player}`), [hostId])
+  return <section className="remote-hub"><div><p className="eyebrow">CONTROLES REMOTOS</p><h2>Dos teléfonos, una sesión</h2><p>Escanea el QR correspondiente. Las pulsaciones viajan por WebRTC directamente al navegador que ejecuta el juego.</p></div><div className="qr-list">{urls.map((url, index) => <div className="qr-card" key={index}><QRCodeSVG value={url} size={116} level="M" includeMargin/><b>Control {index + 1}</b><small className={players[index + 1] ? 'remote-online' : ''}>{players[index + 1] ? 'Conectado' : hostId ? 'Listo para escanear' : 'Preparando sesión…'}</small></div>)}</div><small className="remote-note">Baja latencia: canal WebRTC no ordenado y sin reintentos. Si una red bloquea WebRTC, el teléfono mostrará el error de conexión.</small></section>
+}
