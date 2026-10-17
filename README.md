@@ -31,7 +31,7 @@ The Vite development server sends COOP/COEP headers for the documented threaded-
 
 ## Disc images and BIOS
 
-The UI accepts `.cue`, `.bin`, and `.chd` as the initial selection surface, but no compatibility claim is made until manually checked with the exact EmulatorJS distribution/core and a legally obtained title. Select the `.cue` when a disc has multiple `.bin` tracks; browser `File` objects cannot infer or expose sibling tracks, so multi-track CUE handling requires a later local file-set workflow.
+The UI accepts `.cue`, `.bin`, `.chd`, and `.ecm`. ECM is decoded locally in a Web Worker into a temporary BIN (maximum output: 700 MB); no game bytes are uploaded. Select the `.cue` when a disc has multiple `.bin` tracks; browser `File` objects cannot infer or expose sibling tracks, so multi-track CUE handling requires a later local file-set workflow.
 
 No commercial BIOS is bundled or downloaded. EmulatorJS documents supported BIOS filenames and checksums on its PlayStation page. The UI lets the owner provide a `.bin` BIOS as a temporary browser URL.
 
