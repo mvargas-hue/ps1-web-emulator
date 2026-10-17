@@ -3,7 +3,7 @@ import Peer, { type DataConnection } from 'peerjs'
 import { QRCodeSVG } from 'qrcode.react'
 
 export type RemoteInput = { player: 1 | 2; button: string; pressed: boolean }
-export function RemoteControllers({ onInput }: { onInput(input: RemoteInput): void }) {
+export function RemoteControllers({ onInput, emulatorInputs }: { onInput(input: RemoteInput): void; emulatorInputs: Record<number, number> }) {
   const peer = useRef<Peer | null>(null); const inputCounts = useRef<Record<number, number>>({}); const [hostId, setHostId] = useState(''); const [players, setPlayers] = useState<Record<number, boolean>>({}); const [inputCount, setInputCount] = useState<Record<number, number>>({})
   useEffect(() => {
     const id = `ps1-${crypto.randomUUID().replaceAll('-', '')}`; const instance = new Peer(id); peer.current = instance
@@ -17,5 +17,5 @@ export function RemoteControllers({ onInput }: { onInput(input: RemoteInput): vo
     return () => instance.destroy()
   }, [onInput])
   const urls = useMemo(() => [1, 2].map((player) => `${window.location.origin}${window.location.pathname}?remote=${encodeURIComponent(hostId)}&player=${player}`), [hostId])
-  return <section className="remote-hub"><div><p className="eyebrow">CONTROLES REMOTOS</p><h2>Dos teléfonos, una sesión</h2><p>Escanea el QR correspondiente. Las pulsaciones viajan por WebRTC directamente al navegador que ejecuta el juego.</p></div><div className="qr-list">{urls.map((url, index) => <div className={`qr-card ${players[index + 1] ? 'qr-synced' : ''}`} key={index}>{players[index + 1] ? <><span className="sync-mark">✓</span><b>Control {index + 1}</b><small className="remote-online">Sincronizado · {inputCount[index + 1] ?? 0} señales</small></> : <><QRCodeSVG value={url} size={116} level="M" includeMargin/><b>Control {index + 1}</b><small>{hostId ? 'Listo para escanear' : 'Preparando sesión…'}</small></>}</div>)}</div><small className="remote-note">Primero inicia un juego. Al pulsar un botón, el contador debe aumentar en ambos dispositivos. Baja latencia: canal WebRTC no ordenado y sin reintentos.</small></section>
+  return <section className="remote-hub"><div><p className="eyebrow">CONTROLES REMOTOS</p><h2>Dos teléfonos, una sesión</h2><p>Escanea el QR correspondiente. Las pulsaciones viajan por WebRTC directamente al navegador que ejecuta el juego.</p></div><div className="qr-list">{urls.map((url, index) => <div className={`qr-card ${players[index + 1] ? 'qr-synced' : ''}`} key={index}>{players[index + 1] ? <><span className="sync-mark">✓</span><b>Control {index + 1}</b><small className="remote-online">Sincronizado · RX {inputCount[index + 1] ?? 0} · EMU {emulatorInputs[index + 1] ?? 0}</small></> : <><QRCodeSVG value={url} size={116} level="M" includeMargin/><b>Control {index + 1}</b><small>{hostId ? 'Listo para escanear' : 'Preparando sesión…'}</small></>}</div>)}</div><small className="remote-note">RX confirma que llegó desde el teléfono. EMU confirma que el iframe aplicó la entrada al núcleo.</small></section>
 }
